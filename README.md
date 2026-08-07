@@ -3,7 +3,7 @@
 一个**纯前端、零服务器**的极简个人博客系统，数据完全由你掌控。
 
 > 本站由 [DeepSeek](https://deepseek.com) 辅助生成，代码可能稚嫩，若有 Bug 请多多谅解。  
-> 欢迎提交 [Issues](https://github.com/你的用户名/你的仓库/issues) 帮助改进！
+> 欢迎提交 [Issues](https://github.com/shoot128/xiaohan-s_blog/issues) 帮助改进！
 
 ---
 
