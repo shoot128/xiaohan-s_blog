@@ -1,22 +1,9 @@
 name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [ main ]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]   # 触发分支
-  workflow_dispatch:      # 允许手动触发
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -24,7 +11,7 @@ jobs:
     permissions:
       contents: read
       pages: write
-      id-token: write
+      "id-token": write          # 加引号避免连字符解析错误
 
     environment:
       name: github-pages
