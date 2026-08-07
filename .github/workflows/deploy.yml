@@ -11,7 +11,7 @@ jobs:
     permissions:
       contents: read
       pages: write
-      "id-token": write          # 加引号避免连字符解析错误
+      "id-token": write
 
     environment:
       name: github-pages
@@ -21,10 +21,117 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject Secret
+      - name: Verify template exists
         run: |
+          if [ -f "js/config.template.js" ]; then
+            echo "✅ config.template.js found"
+          else
+            echo "❌ js/config.template.js missing!"
+            exit 1
+          fi
+
+      - name: Inject Secret
+        env:
+          BLOG_PASS: ${{ secrets.BLOG_PASS }}
+        run: |
+          if [ -z "$BLOG_PASS" ]; then
+            echo "❌ BLOG_PASS secret is empty or not set!"
+            exit 1
+          fi
           cp js/config.template.js js/config.js
-          sed -i "s/__BLOG_PASS_PLACEHOLDER__/${{ secrets.BLOG_PASS }}/g" js/config.js
+          sed -i "s/__BLOG_PASS_PLACEHOLDER__/$BLOG_PASS/g" js/config.js
+          echo "✅ Secret injected"
+
+      - name: Merge inbox files
+        env:
+          BLOG_PASS: ${{ secrets.BLOG_PASS }}
+        run: |
+          cat > merge.js << 'EOF'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const webcrypto = crypto.webcrypto.subtle;
+
+          async function deriveKey(password) {
+            const encoder = new TextEncoder();
+            const keyMaterial = await webcrypto.importKey(
+              'raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']
+            );
+            return webcrypto.deriveKey(
+              {
+                name: 'PBKDF2',
+                salt: encoder.encode('blog-salt'),
+                iterations: 100000,
+                hash: 'SHA-256'
+              },
+              keyMaterial,
+              { name: 'AES-GCM', length: 256 },
+              false,
+              ['encrypt', 'decrypt']
+            );
+          }
+
+          async function decrypt(combined, key) {
+            const data = Buffer.from(combined, 'base64');
+            const iv = data.slice(0, 12);
+            const ciphertext = data.slice(12);
+            const decrypted = await webcrypto.decrypt(
+              { name: 'AES-GCM', iv }, key, ciphertext
+            );
+            return new TextDecoder().decode(decrypted);
+          }
+
+          async function encrypt(text, key) {
+            const encoder = new TextEncoder();
+            const iv = crypto.randomBytes(12);
+            const encrypted = await webcrypto.encrypt(
+              { name: 'AES-GCM', iv }, key, encoder.encode(text)
+            );
+            const combined = Buffer.concat([iv, Buffer.from(encrypted)]);
+            return combined.toString('base64');
+          }
+
+          (async () => {
+            const password = process.env.BLOG_PASS;
+            if (!password) {
+              console.error('BLOG_PASS not set');
+              process.exit(1);
+            }
+            const key = await deriveKey(password);
+
+            const inboxDir = './inbox';
+            const outputFile = './data/posts.enc';
+
+            if (!fs.existsSync(inboxDir)) {
+              fs.mkdirSync(inboxDir, { recursive: true });
+            }
+
+            let allPosts = [];
+            const files = fs.readdirSync(inboxDir).filter(f => f.endsWith('.enc'));
+            for (const file of files) {
+              const content = fs.readFileSync(`${inboxDir}/${file}`, 'utf-8');
+              try {
+                const decrypted = await decrypt(content, key);
+                const posts = JSON.parse(decrypted);
+                allPosts = allPosts.concat(posts);
+              } catch (e) {
+                console.error(`Error processing ${file}: ${e.message}`);
+              }
+            }
+
+            // 按文章 ID 去重
+            const map = new Map();
+            for (const post of allPosts) {
+              map.set(post.id, post);
+            }
+            const merged = Array.from(map.values());
+
+            const encrypted = await encrypt(JSON.stringify(merged), key);
+            fs.writeFileSync(outputFile, encrypted);
+            console.log(`Merged ${merged.length} posts into ${outputFile}`);
+          })();
+          EOF
+
+          node merge.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
