@@ -8,36 +8,18 @@
     <script src="js/blog-data.js"></script>
     <style>
         :root {
-            --bg: #f9f7f4;
-            --bg-card: #ffffff;
-            --text: #2c2c2c;
-            --text-secondary: #5a5a5a;
-            --text-muted: #8a8a8a;
-            --border: #e8e4e0;
-            --accent: #a67c6b;
-            --accent-soft: #d4c5bc;
-            --shadow: 0 2px 12px rgba(0,0,0,0.06);
-            --shadow-hover: 0 6px 24px rgba(0,0,0,0.10);
-            --radius: 20px;
-            --radius-sm: 12px;
-            --transition: 0.35s ease;
+            --bg: #f9f7f4; --bg-card: #ffffff; --text: #2c2c2c; --text-secondary: #5a5a5a;
+            --text-muted: #8a8a8a; --border: #e8e4e0; --accent: #a67c6b; --accent-soft: #d4c5bc;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06); --shadow-hover: 0 6px 24px rgba(0,0,0,0.10);
+            --radius: 20px; --radius-sm: 12px; --transition: 0.35s ease;
             --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --tag-bg: #f0ebe6;
-            --tag-text: #7a6b5f;
+            --tag-bg: #f0ebe6; --tag-text: #7a6b5f;
         }
         [data-theme="dark"] {
-            --bg: #1a1a1e;
-            --bg-card: #26262b;
-            --text: #e8e4e0;
-            --text-secondary: #b0aba6;
-            --text-muted: #7a7570;
-            --border: #3a3a3f;
-            --accent: #c9a898;
-            --accent-soft: #5a4f4a;
-            --shadow: 0 2px 12px rgba(0,0,0,0.25);
-            --shadow-hover: 0 6px 24px rgba(0,0,0,0.35);
-            --tag-bg: #3a3530;
-            --tag-text: #c9beb5;
+            --bg: #1a1a1e; --bg-card: #26262b; --text: #e8e4e0; --text-secondary: #b0aba6;
+            --text-muted: #7a7570; --border: #3a3a3f; --accent: #c9a898; --accent-soft: #5a4f4a;
+            --shadow: 0 2px 12px rgba(0,0,0,0.25); --shadow-hover: 0 6px 24px rgba(0,0,0,0.35);
+            --tag-bg: #3a3530; --tag-text: #c9beb5;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { font-size: 16px; scroll-behavior: smooth; }
@@ -48,24 +30,14 @@
         }
         a { color: var(--accent); text-decoration: none; transition: color var(--transition); }
         a:hover { text-decoration: underline; opacity: 0.85; }
-        button {
-            cursor: pointer; font-family: inherit; font-size: 0.95rem; border: none;
-            border-radius: 8px; padding: 10px 20px; transition: all var(--transition);
-            background: var(--accent); color: #fff; display: inline-flex; align-items: center;
-            gap: 6px; font-weight: 500; letter-spacing: 0.01em;
-        }
+        button { cursor: pointer; font-family: inherit; font-size: 0.95rem; border: none; border-radius: 8px; padding: 10px 20px; transition: all var(--transition); background: var(--accent); color: #fff; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
         button:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--shadow-hover); }
         button:active { transform: scale(0.95); }
-        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
         .container { max-width: 1100px; margin: 0 auto; padding: 20px 24px; width: 100%; }
-        .card {
-            background: var(--bg-card); border-radius: var(--radius); padding: 24px;
-            box-shadow: var(--shadow); border: 1px solid var(--border); transition: all var(--transition);
-        }
+        .card { background: var(--bg-card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); transition: all var(--transition); }
         .card:hover { box-shadow: var(--shadow-hover); }
         .card-sm { border-radius: var(--radius-sm); padding: 18px; }
-        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; background: var(--tag-bg); color: var(--tag-text); }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; background: var(--tag-bg); color: var(--tag-text); }
         .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.78rem; padding: 3px 10px; border-radius: 14px; font-weight: 600; }
         .badge-featured { background: #fdf2e0; color: #b8860b; }
         .badge-public { background: #e3f2fd; color: #3a7ca5; }
@@ -78,19 +50,10 @@
         .mb-2 { margin-bottom: 16px; } .mb-3 { margin-bottom: 24px; }
         .text-center { text-align: center; } .text-muted { color: var(--text-muted); }
         .text-secondary { color: var(--text-secondary); } .text-sm { font-size: 0.85rem; }
-        .site-header {
-            position: sticky; top: 0; z-index: 100; background: var(--bg);
-            border-bottom: 1px solid var(--border); backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px); transition: background var(--transition);
-        }
+        .site-header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); backdrop-filter: blur(10px); }
         .site-header .container { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; padding-bottom: 12px; }
-        .site-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
-        .theme-toggle {
-            background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 50%;
-            width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem; cursor: pointer; transition: all var(--transition); padding: 0; color: var(--text);
-        }
-        .theme-toggle:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+        .site-title { font-size: 1.5rem; font-weight: 700; }
+        .theme-toggle { background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; padding: 0; }
         .main-layout { display: flex; gap: 28px; flex: 1; padding-top: 24px; padding-bottom: 40px; }
         .sidebar { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; }
         .sidebar .card { text-align: center; }
@@ -98,26 +61,20 @@
         .sidebar-name { font-weight: 700; font-size: 1.2rem; margin-bottom: 4px; }
         .sidebar-bio { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
         .sidebar-links a { display: block; padding: 4px 0; font-size: 0.85rem; }
-        .mode-status { font-size: 0.75rem; padding: 6px 12px; border-radius: 20px; display: inline-block; font-weight: 500; background: #fff8e1; color: #b8860b; }
+        .mode-status { font-size: 0.75rem; padding: 6px 12px; border-radius: 20px; display: inline-block; background: #fff8e1; color: #b8860b; }
         [data-theme="dark"] .mode-status { background: #3a2e1a; color: #e0b860; }
         .main-content { flex: 1; min-width: 0; }
-        .tab-nav { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
-        .tab-btn {
-            padding: 10px 20px; border: none; background: transparent; color: var(--text-muted);
-            font-weight: 600; font-size: 0.95rem; cursor: pointer; border-radius: 10px 10px 0 0;
-            transition: all var(--transition); position: relative; letter-spacing: 0.01em;
-        }
+        .tab-nav { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+        .tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; border-radius: 10px 10px 0 0; transition: all var(--transition); }
         .tab-btn.active { color: var(--accent); background: var(--bg-card); }
-        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px; }
-        .tab-btn:hover { color: var(--accent); background: rgba(166,124,107,0.05); }
-        .post-card { cursor: pointer; transition: all var(--transition); position: relative; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--accent); }
+        .post-card { cursor: pointer; transition: all var(--transition); }
         .post-card:hover { transform: translateY(-2px); }
         .post-card .post-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
         .post-card h3 { font-size: 1.15rem; margin-bottom: 4px; }
         .post-card .excerpt { color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .post-card .author-tag { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
+        .author-tag { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 12px; }
         footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: auto; }
         footer .footer-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
         @media (max-width: 820px) {
@@ -219,7 +176,7 @@
                 return div.innerHTML;
             }
 
-            // 加载远程个人信息
+            // 侧边栏使用固定信息或远程 profile（可选）
             async function loadRemoteProfile() {
                 try {
                     const res = await fetch('data/profile.enc');
@@ -227,47 +184,36 @@
                     const encText = await res.text();
                     const plain = await decrypt(encText);
                     return JSON.parse(plain);
-                } catch (e) {
-                    console.warn('加载远程个人信息失败', e);
-                    return null;
-                }
+                } catch (e) { return null; }
             }
 
-            function updateSidebar(profileOverride) {
-                const profile = profileOverride || BlogData.getProfile();
-                document.getElementById('sidebarName').textContent = profile.name || '书斋访客';
-                document.getElementById('sidebarBio').textContent = profile.bio || '欢迎来到静谧书斋';
+            function updateSidebar(profile) {
+                const p = profile || { name: '书斋访客', bio: '欢迎来到静谧书斋', avatar: '', links: [] };
+                document.getElementById('sidebarName').textContent = p.name;
+                document.getElementById('sidebarBio').textContent = p.bio;
                 const avatar = document.getElementById('sidebarAvatar');
-                if (profile.avatar) {
-                    avatar.src = profile.avatar;
-                    avatar.onerror = () => { avatar.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23d4c5bc\' width=\'80\' height=\'80\' rx=\'40\'/%3E%3Ctext x=\'40\' y=\'48\' text-anchor=\'middle\' fill=\'%23fff\' font-size=\'32\'%3E📖%3C/text%3E%3C/svg%3E'; };
+                if (p.avatar) {
+                    avatar.src = p.avatar;
+                    avatar.onerror = () => { avatar.src = 'data:image/svg+xml,...'; };
                 }
                 const linksContainer = document.getElementById('sidebarLinks');
-                if (profile.links && profile.links.length) {
-                    linksContainer.innerHTML = profile.links.map(l =>
-                        `<a href="${escapeHTML(l.url)}" target="_blank" rel="noopener">🔗 ${escapeHTML(l.name)}</a>`
-                    ).join('');
-                } else {
-                    linksContainer.innerHTML = '';
-                }
+                if (p.links && p.links.length) {
+                    linksContainer.innerHTML = p.links.map(l => `<a href="${escapeHTML(l.url)}" target="_blank">🔗 ${escapeHTML(l.name)}</a>`).join('');
+                } else linksContainer.innerHTML = '';
             }
 
+            // 加载远程加密文章（含作者信息）
             async function loadRemotePosts() {
                 try {
                     const res = await fetch('data/posts.enc');
                     if (!res.ok) return [];
                     const encText = await res.text();
                     const plain = await decrypt(encText);
-                    const posts = JSON.parse(plain);
-                    return posts.map(p => ({ ...p, author_name: '' }));
-                } catch (e) {
-                    console.warn('加载远程加密文章失败', e);
-                    return [];
-                }
+                    return JSON.parse(plain);
+                } catch (e) { return []; }
             }
 
             let remotePublicPosts = [];
-            let remoteProfile = null;
 
             function renderPosts(posts, showAuthor = false) {
                 const grid = document.getElementById('postGrid');
@@ -278,18 +224,18 @@
                     return;
                 }
                 empty.style.display = 'none';
-                const displayProfile = remoteProfile || BlogData.getProfile();
-                const authorName = displayProfile.name || '管理员';
                 grid.innerHTML = posts.map(post => {
                     const badges = [];
                     if (post.featured) badges.push('<span class="badge badge-featured">⭐ 精选</span>');
                     if (post.public) badges.push('<span class="badge badge-public">🌐 公开</span>');
+                    const authorProfile = post.author_profile || {};
+                    const authorName = authorProfile.name || '匿名';
                     const authorHTML = showAuthor ? `<span class="author-tag">✍ ${escapeHTML(authorName)}</span>` : '';
                     return `
                     <div class="card card-sm post-card" onclick="location.href='post.html?id=${encodeURIComponent(post.id)}&source=${showAuthor ? 'public' : 'mine'}'">
                         <div class="flex-between">
                             <h3>${escapeHTML(post.title)}</h3>
-                            <div style="flex-shrink:0;display:flex;gap:4px;">${badges.join('')}</div>
+                            <div>${badges.join('')}</div>
                         </div>
                         <div class="post-meta">
                             <span class="text-sm text-muted">📅 ${escapeHTML(post.date)}</span>
@@ -311,14 +257,9 @@
                 document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
                 pageTitle.textContent = tab === 'public' ? '🌐 公开文章' : '📝 我的文章';
                 if (tab === 'public') {
-                    if (remotePublicPosts.length === 0) {
-                        remotePublicPosts = await loadRemotePosts();
-                    }
-                    if (remotePublicPosts.length > 0) {
-                        renderPosts(remotePublicPosts, true);
-                    } else {
-                        renderPosts(BlogData.getPublicPosts(), true);
-                    }
+                    if (remotePublicPosts.length === 0) remotePublicPosts = await loadRemotePosts();
+                    if (remotePublicPosts.length > 0) renderPosts(remotePublicPosts, true);
+                    else renderPosts(BlogData.getPublicPosts(), true);
                 } else {
                     renderPosts(BlogData.getAllPosts(), false);
                 }
@@ -327,16 +268,14 @@
             tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
             (async () => {
-                remoteProfile = await loadRemoteProfile();
+                const remoteProfile = await loadRemoteProfile();
                 updateSidebar(remoteProfile);
                 remotePublicPosts = await loadRemotePosts();
                 await switchTab('public');
             })();
 
-            window.addEventListener('storage', (e) => {
-                if (e.key && e.key.startsWith('blog_')) {
-                    updateSidebar(remoteProfile);
-                }
+            window.addEventListener('storage', () => {
+                updateSidebar();
             });
         })();
     </script>
