@@ -18,6 +18,7 @@
             --accent-soft: #d4c5bc;
             --shadow: 0 2px 12px rgba(0,0,0,0.06);
             --radius: 20px;
+            --radius-sm: 12px;
             --transition: 0.35s ease;
             --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
@@ -45,7 +46,9 @@
         }
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; }
-        .container { max-width: 800px; margin: 0 auto; padding: 24px; width: 100%; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; width: 100%; }
+        .detail-layout { display: flex; gap: 28px; flex: 1; }
+        .article-main { flex: 1; min-width: 0; }
         .card {
             background: var(--bg-card);
             border-radius: var(--radius);
@@ -71,16 +74,50 @@
         }
         .theme-toggle:hover { border-color: var(--accent); }
         footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.8rem; margin-top: auto; }
+
+        /* 侧边栏样式（与主页一致） */
+        .sidebar { width: 280px; flex-shrink: 0; }
+        .sidebar .card { text-align: center; padding: 24px; }
+        .sidebar-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-soft); margin: 0 auto 12px; background: var(--border); }
+        .sidebar-name { font-weight: 700; font-size: 1.2rem; margin-bottom: 4px; }
+        .sidebar-bio { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; }
+        .sidebar-links a { display: block; padding: 4px 0; font-size: 0.85rem; }
+        .mode-status { font-size: 0.75rem; padding: 6px 12px; border-radius: 20px; display: inline-block; font-weight: 500; background: #fff8e1; color: #b8860b; margin-top: 8px; }
+        [data-theme="dark"] .mode-status { background: #3a2e1a; color: #e0b860; }
+
+        @media (max-width: 820px) {
+            .detail-layout { flex-direction: column; }
+            .sidebar { width: 100%; }
+        }
+        @media (max-width: 640px) {
+            .container { padding: 12px 14px; }
+            .card { padding: 20px; }
+        }
     </style>
 </head>
 <body>
     <button class="theme-toggle" id="themeToggle" title="切换主题">☀️</button>
-    <main class="container">
+    <div class="container">
         <a href="index.html" class="back-link">← 返回书斋</a>
-        <div id="postContainer" class="card">
-            <p class="text-muted text-center">加载中...</p>
+        <div class="detail-layout">
+            <!-- 文章主体 -->
+            <div class="article-main">
+                <div id="postContainer" class="card">
+                    <p class="text-muted text-center">加载中...</p>
+                </div>
+            </div>
+            <!-- 作者侧栏（动态填充） -->
+            <aside class="sidebar" id="authorSidebar" style="display:none;">
+                <div class="card">
+                    <img class="sidebar-avatar" id="authorAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23d4c5bc' width='80' height='80' rx='40'/%3E%3Ctext x='40' y='48' text-anchor='middle' fill='%23fff' font-size='32'%3E📖%3C/text%3E%3C/svg%3E" alt="头像">
+                    <div class="sidebar-name" id="authorName"></div>
+                    <div class="sidebar-bio" id="authorBio"></div>
+                    <div class="sidebar-links" id="authorLinks"></div>
+                    <div class="mode-status">✍ 作者</div>
+                </div>
+            </aside>
         </div>
-    </main>
+    </div>
     <footer>
         <p>© 2026 静谧书斋 · 📡 山脉工作室 & DeepSeek 荣誉出品</p>
     </footer>
@@ -101,7 +138,7 @@
                 themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
             });
 
-            // 解密函数
+            // 解密
             async function deriveKey() {
                 const enc = new TextEncoder();
                 const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
@@ -137,6 +174,31 @@
                 }
             }
 
+            // 填充作者侧栏
+            function renderAuthorSidebar(profile) {
+                const sidebar = document.getElementById('authorSidebar');
+                if (!profile) {
+                    sidebar.style.display = 'none';
+                    return;
+                }
+                sidebar.style.display = 'block';
+                document.getElementById('authorName').textContent = profile.name || '匿名';
+                document.getElementById('authorBio').textContent = profile.bio || '';
+                const avatar = document.getElementById('authorAvatar');
+                if (profile.avatar) {
+                    avatar.src = profile.avatar;
+                    avatar.onerror = () => { avatar.src = 'data:image/svg+xml,...'; };
+                }
+                const linksContainer = document.getElementById('authorLinks');
+                if (profile.links && profile.links.length) {
+                    linksContainer.innerHTML = profile.links.map(l =>
+                        `<a href="${escapeHTML(l.url)}" target="_blank" rel="noopener">🔗 ${escapeHTML(l.name)}</a>`
+                    ).join('');
+                } else {
+                    linksContainer.innerHTML = '';
+                }
+            }
+
             const params = new URLSearchParams(window.location.search);
             const postId = params.get('id');
             const source = params.get('source') || 'public';
@@ -151,7 +213,10 @@
                 let post = null;
                 if (source === 'mine') {
                     post = BlogData.getPost(postId);
+                    // 我的文章不显示作者侧栏
+                    document.getElementById('authorSidebar').style.display = 'none';
                 } else {
+                    // 公开文章，先尝试远程加密包
                     try {
                         const res = await fetch('data/posts.enc');
                         if (res.ok) {
@@ -165,6 +230,15 @@
                         post = BlogData.getPost(postId);
                         if (post && !post.public) post = null;
                     }
+                    // 加载并显示作者侧栏
+                    const remoteProfile = await loadRemoteProfile();
+                    if (remoteProfile) {
+                        renderAuthorSidebar(remoteProfile);
+                    } else {
+                        // 回退到本地个人信息
+                        const localProfile = BlogData.getProfile();
+                        renderAuthorSidebar(localProfile);
+                    }
                 }
 
                 if (!post) {
@@ -172,16 +246,11 @@
                     return;
                 }
 
-                // 获取作者昵称
+                // 获取作者名（用于文章meta，侧栏已有独立信息）
                 let authorName = '管理员';
                 if (source === 'public') {
-                    const remoteProfile = await loadRemoteProfile();
-                    if (remoteProfile) {
-                        authorName = remoteProfile.name || '管理员';
-                    } else {
-                        const localProfile = BlogData.getProfile();
-                        authorName = localProfile.name || '管理员';
-                    }
+                    const profile = await loadRemoteProfile() || BlogData.getProfile();
+                    authorName = profile.name || '管理员';
                 }
 
                 const badges = [];
