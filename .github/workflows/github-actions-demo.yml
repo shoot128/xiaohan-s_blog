@@ -1,3 +1,0 @@
-// 本地开发时，请复制本文件为 config.js 并填入真实密钥
-// 部署时 GitHub Actions 会自动替换 __BLOG_PASS_PLACEHOLDER__
-window.__BLOG_PASS__ = '__BLOG_PASS_PLACEHOLDER__';
