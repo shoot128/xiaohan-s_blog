@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>静谧书斋 - 个人博客</title>
+    <script src="js/config.js"></script>
     <script src="js/blog-data.js"></script>
     <style>
         :root {
@@ -181,6 +182,9 @@
 
     <script>
         (() => {
+            // 从 config.js 获取密钥
+            const PUBLIC_PASS = window.__BLOG_PASS__ || 'fallback-dev-key';
+
             // 主题
             const themeToggle = document.getElementById('themeToggle');
             const savedTheme = localStorage.getItem('blog_theme') || 'light';
@@ -194,7 +198,6 @@
             });
 
             // 加解密
-            const PUBLIC_PASS = 'MyPublicBlogKey2024!';
             async function deriveKey() {
                 const enc = new TextEncoder();
                 const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
@@ -217,7 +220,7 @@
                 return div.innerHTML;
             }
 
-            // 加载远程加密个人信息
+            // 加载远程个人信息
             async function loadRemoteProfile() {
                 try {
                     const res = await fetch('data/profile.enc');
@@ -231,7 +234,6 @@
                 }
             }
 
-            // 更新侧边栏，可接受远程 profile
             function updateSidebar(profileOverride) {
                 const profile = profileOverride || BlogData.getProfile();
                 document.getElementById('sidebarName').textContent = profile.name || '书斋访客';
@@ -251,7 +253,6 @@
                 }
             }
 
-            // 加载远程加密文章
             async function loadRemotePosts() {
                 try {
                     const res = await fetch('data/posts.enc');
@@ -259,7 +260,6 @@
                     const encText = await res.text();
                     const plain = await decrypt(encText);
                     const posts = JSON.parse(plain);
-                    // 添加作者信息占位，稍后由详情页决定
                     return posts.map(p => ({ ...p, author_name: '' }));
                 } catch (e) {
                     console.warn('加载远程加密文章失败', e);
@@ -302,7 +302,6 @@
                 }).join('');
             }
 
-            // Tab 切换
             let currentTab = 'public';
             const tabButtons = document.querySelectorAll('.tab-btn');
             const pageTitle = document.getElementById('pageTitle');
@@ -328,7 +327,6 @@
 
             tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-            // 初始化
             (async () => {
                 remoteProfile = await loadRemoteProfile();
                 updateSidebar(remoteProfile);
@@ -338,7 +336,7 @@
 
             window.addEventListener('storage', (e) => {
                 if (e.key && e.key.startsWith('blog_')) {
-                    updateSidebar(remoteProfile); // 重新加载侧边栏时仍使用远程 profile
+                    updateSidebar(remoteProfile);
                 }
             });
         })();
