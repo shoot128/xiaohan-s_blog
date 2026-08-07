@@ -56,6 +56,7 @@
         button:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--shadow-hover); }
         button:active { transform: scale(0.95); }
         button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
         .container { max-width: 1100px; margin: 0 auto; padding: 20px 24px; width: 100%; }
         .card {
             background: var(--bg-card); border-radius: var(--radius); padding: 24px;
@@ -180,7 +181,7 @@
 
     <script>
         (() => {
-            // ========== 主题 ==========
+            // 主题
             const themeToggle = document.getElementById('themeToggle');
             const savedTheme = localStorage.getItem('blog_theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -192,47 +193,53 @@
                 themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
             });
 
-            // ========== 加密解密工具 ==========
+            // 加解密
             const PUBLIC_PASS = 'MyPublicBlogKey2024!';
             async function deriveKey() {
                 const enc = new TextEncoder();
-                const keyMaterial = await crypto.subtle.importKey(
-                    'raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']
-                );
+                const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
                 return crypto.subtle.deriveKey(
                     { name: 'PBKDF2', salt: enc.encode('blog-salt'), iterations: 100000, hash: 'SHA-256' },
-                    keyMaterial,
-                    { name: 'AES-GCM', length: 256 },
-                    false,
-                    ['encrypt', 'decrypt']
+                    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
                 );
             }
-
             async function decrypt(combined) {
                 const key = await deriveKey();
                 const data = Uint8Array.from(atob(combined), c => c.charCodeAt(0));
-                const iv = data.slice(0, 12);
-                const ciphertext = data.slice(12);
+                const iv = data.slice(0, 12), ciphertext = data.slice(12);
                 const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
                 return new TextDecoder().decode(decrypted);
             }
 
-            // ========== 辅助函数 ==========
             function escapeHTML(str) {
                 const div = document.createElement('div');
                 div.textContent = str || '';
                 return div.innerHTML;
             }
 
-            // ========== 侧边栏 ==========
-            function updateSidebar() {
-                const profile = BlogData.getProfile();
+            // 加载远程加密个人信息
+            async function loadRemoteProfile() {
+                try {
+                    const res = await fetch('data/profile.enc');
+                    if (!res.ok) return null;
+                    const encText = await res.text();
+                    const plain = await decrypt(encText);
+                    return JSON.parse(plain);
+                } catch (e) {
+                    console.warn('加载远程个人信息失败', e);
+                    return null;
+                }
+            }
+
+            // 更新侧边栏，可接受远程 profile
+            function updateSidebar(profileOverride) {
+                const profile = profileOverride || BlogData.getProfile();
                 document.getElementById('sidebarName').textContent = profile.name || '书斋访客';
                 document.getElementById('sidebarBio').textContent = profile.bio || '欢迎来到静谧书斋';
                 const avatar = document.getElementById('sidebarAvatar');
                 if (profile.avatar) {
                     avatar.src = profile.avatar;
-                    avatar.onerror = () => { avatar.src = 'data:image/svg+xml,...'; };
+                    avatar.onerror = () => { avatar.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23d4c5bc\' width=\'80\' height=\'80\' rx=\'40\'/%3E%3Ctext x=\'40\' y=\'48\' text-anchor=\'middle\' fill=\'%23fff\' font-size=\'32\'%3E📖%3C/text%3E%3C/svg%3E'; };
                 }
                 const linksContainer = document.getElementById('sidebarLinks');
                 if (profile.links && profile.links.length) {
@@ -244,7 +251,25 @@
                 }
             }
 
-            // ========== 渲染文章卡片 ==========
+            // 加载远程加密文章
+            async function loadRemotePosts() {
+                try {
+                    const res = await fetch('data/posts.enc');
+                    if (!res.ok) return [];
+                    const encText = await res.text();
+                    const plain = await decrypt(encText);
+                    const posts = JSON.parse(plain);
+                    // 添加作者信息占位，稍后由详情页决定
+                    return posts.map(p => ({ ...p, author_name: '' }));
+                } catch (e) {
+                    console.warn('加载远程加密文章失败', e);
+                    return [];
+                }
+            }
+
+            let remotePublicPosts = [];
+            let remoteProfile = null;
+
             function renderPosts(posts, showAuthor = false) {
                 const grid = document.getElementById('postGrid');
                 const empty = document.getElementById('emptyState');
@@ -254,12 +279,13 @@
                     return;
                 }
                 empty.style.display = 'none';
-                const profile = BlogData.getProfile();
+                const displayProfile = remoteProfile || BlogData.getProfile();
+                const authorName = displayProfile.name || '管理员';
                 grid.innerHTML = posts.map(post => {
                     const badges = [];
                     if (post.featured) badges.push('<span class="badge badge-featured">⭐ 精选</span>');
                     if (post.public) badges.push('<span class="badge badge-public">🌐 公开</span>');
-                    const authorHTML = showAuthor ? `<span class="author-tag">✍ ${escapeHTML(profile.name || '管理员')}</span>` : '';
+                    const authorHTML = showAuthor ? `<span class="author-tag">✍ ${escapeHTML(authorName)}</span>` : '';
                     return `
                     <div class="card card-sm post-card" onclick="location.href='post.html?id=${encodeURIComponent(post.id)}&source=${showAuthor ? 'public' : 'mine'}'">
                         <div class="flex-between">
@@ -276,29 +302,7 @@
                 }).join('');
             }
 
-            // ========== 加载远程加密公开文章 ==========
-            let remotePublicPosts = []; // 缓存
-            async function loadRemotePublicPosts() {
-                try {
-                    const res = await fetch('data/posts.enc');
-                    if (!res.ok) return [];
-                    const encText = await res.text();
-                    const plain = await decrypt(encText);
-                    const posts = JSON.parse(plain);
-                    // 为每篇文章添加作者信息（取本地用户昵称）
-                    const profile = BlogData.getProfile();
-                    posts.forEach(p => {
-                        p.author_name = profile.name || '管理员';
-                        p.public = true; // 强制标记为公开
-                    });
-                    return posts;
-                } catch (e) {
-                    console.warn('加载远程加密文章失败，使用本地公开文章', e);
-                    return [];
-                }
-            }
-
-            // ========== Tab 切换 ==========
+            // Tab 切换
             let currentTab = 'public';
             const tabButtons = document.querySelectorAll('.tab-btn');
             const pageTitle = document.getElementById('pageTitle');
@@ -309,41 +313,32 @@
                 document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
                 pageTitle.textContent = tab === 'public' ? '🌐 公开文章' : '📝 我的文章';
                 if (tab === 'public') {
-                    // 优先使用远程加密文章，若没有则退化为本地公开文章
                     if (remotePublicPosts.length === 0) {
-                        remotePublicPosts = await loadRemotePublicPosts();
+                        remotePublicPosts = await loadRemotePosts();
                     }
                     if (remotePublicPosts.length > 0) {
                         renderPosts(remotePublicPosts, true);
                     } else {
-                        const localPublic = BlogData.getPublicPosts();
-                        renderPosts(localPublic, true);
+                        renderPosts(BlogData.getPublicPosts(), true);
                     }
                 } else {
-                    const myPosts = BlogData.getAllPosts();
-                    renderPosts(myPosts, false);
+                    renderPosts(BlogData.getAllPosts(), false);
                 }
             }
 
-            tabButtons.forEach(btn => {
-                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-            });
+            tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-            // ========== 初始化 ==========
+            // 初始化
             (async () => {
-                updateSidebar();
-                // 预加载远程加密文章
-                remotePublicPosts = await loadRemotePublicPosts();
-                // 默认显示公开文章
+                remoteProfile = await loadRemoteProfile();
+                updateSidebar(remoteProfile);
+                remotePublicPosts = await loadRemotePosts();
                 await switchTab('public');
             })();
 
-            // 监听跨标签页变化（localStorage 更新时刷新）
             window.addEventListener('storage', (e) => {
                 if (e.key && e.key.startsWith('blog_')) {
-                    updateSidebar();
-                    // 如果本地数据变动，可能需要重新加载远程文章？通常不必，但可清除缓存
-                    // 这里简单处理：不清除，只在下次切换时重新加载
+                    updateSidebar(remoteProfile); // 重新加载侧边栏时仍使用远程 profile
                 }
             });
         })();
