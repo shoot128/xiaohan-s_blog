@@ -1,0 +1,1 @@
+window.__BLOG_PASS__ = '__BLOG_PASS_PLACEHOLDER__';
