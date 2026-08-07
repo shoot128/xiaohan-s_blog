@@ -4,31 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文章详情 - 静谧书斋</title>
+    <script src="js/config.js"></script>
     <script src="js/blog-data.js"></script>
     <style>
         :root {
-            --bg: #f9f7f4; --bg-card: #ffffff; --text: #2c2c2c; --text-secondary: #5a5a5a;
-            --text-muted: #8a8a8a; --border: #e8e4e0; --accent: #a67c6b; --accent-soft: #d4c5bc;
-            --shadow: 0 2px 12px rgba(0,0,0,0.06); --radius: 20px; --transition: 0.35s ease;
+            --bg: #f9f7f4;
+            --bg-card: #ffffff;
+            --text: #2c2c2c;
+            --text-secondary: #5a5a5a;
+            --text-muted: #8a8a8a;
+            --border: #e8e4e0;
+            --accent: #a67c6b;
+            --accent-soft: #d4c5bc;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06);
+            --radius: 20px;
+            --transition: 0.35s ease;
             --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         [data-theme="dark"] {
-            --bg: #1a1a1e; --bg-card: #26262b; --text: #e8e4e0; --text-secondary: #b0aba6;
-            --text-muted: #7a7570; --border: #3a3a3f; --accent: #c9a898; --accent-soft: #5a4f4a;
+            --bg: #1a1a1e;
+            --bg-card: #26262b;
+            --text: #e8e4e0;
+            --text-secondary: #b0aba6;
+            --text-muted: #7a7570;
+            --border: #3a3a3f;
+            --accent: #c9a898;
+            --accent-soft: #5a4f4a;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { font-size: 16px; }
         body {
-            font-family: var(--font); background: var(--bg); color: var(--text);
-            line-height: 1.7; min-height: 100vh; display: flex; flex-direction: column;
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
             transition: background var(--transition), color var(--transition);
         }
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; }
         .container { max-width: 800px; margin: 0 auto; padding: 24px; width: 100%; }
         .card {
-            background: var(--bg-card); border-radius: var(--radius); padding: 32px;
-            box-shadow: var(--shadow); border: 1px solid var(--border);
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 32px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
         }
         .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; background: #f0ebe6; color: #7a6b5f; margin-right: 6px; }
         [data-theme="dark"] .tag { background: #3a3530; color: #c9beb5; }
@@ -64,6 +87,9 @@
 
     <script>
         (() => {
+            const PUBLIC_PASS = window.__BLOG_PASS__ || 'fallback-dev-key';
+
+            // 主题
             const themeToggle = document.getElementById('themeToggle');
             const savedTheme = localStorage.getItem('blog_theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -75,7 +101,7 @@
                 themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
             });
 
-            const PUBLIC_PASS = 'MyPublicBlogKey2024!';
+            // 解密函数
             async function deriveKey() {
                 const enc = new TextEncoder();
                 const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
@@ -98,6 +124,7 @@
                 return div.innerHTML;
             }
 
+            // 加载远程个人信息
             async function loadRemoteProfile() {
                 try {
                     const res = await fetch('data/profile.enc');
