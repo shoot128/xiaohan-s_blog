@@ -90,6 +90,30 @@ jobs:
             return combined.toString('base64');
           }
 
+          async function normalizePost(post, fileName) {
+            // 确保文章有 id
+            if (!post.id) {
+              post.id = 'post_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
+            }
+            // 如果没有作者信息，尝试从文件名提取用户ID
+            if (!post.author_profile) {
+              const match = fileName.match(/^(.+?)_posts\.enc$/);
+              const userId = match ? match[1] : 'anonymous';
+              post.author_id = userId;
+              post.author_profile = {
+                name: userId,
+                avatar: '',
+                bio: '',
+                links: []
+              };
+            }
+            // 确保 author_id 与 profile 中的 name 一致（如果缺失）
+            if (!post.author_id) {
+              post.author_id = post.author_profile?.name || 'anonymous';
+            }
+            return post;
+          }
+
           (async () => {
             const password = process.env.BLOG_PASS;
             if (!password) {
@@ -112,13 +136,17 @@ jobs:
               try {
                 const decrypted = await decrypt(content, key);
                 const posts = JSON.parse(decrypted);
+                // 兼容旧格式：为每篇文章补全作者信息
+                for (let i = 0; i < posts.length; i++) {
+                  posts[i] = await normalizePost(posts[i], file);
+                }
                 allPosts = allPosts.concat(posts);
               } catch (e) {
                 console.error(`Error processing ${file}: ${e.message}`);
               }
             }
 
-            // 按文章 ID 去重
+            // 按文章 ID 去重（保留后出现的版本，即文件名顺序靠后的覆盖前面的）
             const map = new Map();
             for (const post of allPosts) {
               map.set(post.id, post);
