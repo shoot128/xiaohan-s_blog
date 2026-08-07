@@ -113,6 +113,9 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease; }
         .modal { background: var(--bg-card); border-radius: var(--radius); padding: 28px; max-width: 500px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .user-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all var(--transition); }
+        .user-item:hover { border-color: var(--accent); background: rgba(166,124,107,0.05); }
+        .user-item.active { border-color: var(--accent); background: rgba(166,124,107,0.1); }
         @media (max-width: 640px) {
             .container { padding: 12px 14px; }
             .card { padding: 16px; }
@@ -130,23 +133,41 @@
     </header>
 
     <main class="container" style="flex:1; padding-top:24px; padding-bottom:40px;">
-        <!-- 登录界面 -->
+        <!-- 多用户登录界面 -->
         <div id="loginSection">
             <div class="card" style="max-width:440px; margin:40px auto;">
-                <h2 style="margin-bottom:16px;">🔐 本地管理员登录</h2>
-                <p class="text-secondary text-sm mb-3">密码固定为 <code>bilibili</code></p>
-                <label>管理员密码</label>
-                <input type="password" id="loginPassword" placeholder="输入密码" class="mb-2">
-                <button id="loginBtn" style="width:100%;">登录</button>
+                <h2 style="margin-bottom:16px;">👥 选择用户</h2>
+                <div id="userListContainer" class="mb-2">
+                    <p class="text-muted text-sm">暂无用户，请创建第一个用户。</p>
+                </div>
+                <div class="flex-between mb-2">
+                    <button id="createUserBtn" class="small secondary">➕ 创建新用户</button>
+                </div>
+                <div id="loginPasswordArea" style="display:none;">
+                    <label>私人密码</label>
+                    <input type="password" id="loginPassword" placeholder="输入该用户的私人密码" class="mb-2">
+                    <button id="loginBtn" style="width:100%;">登录</button>
+                    <button id="cancelLoginBtn" class="secondary small mt-1" style="width:100%;">取消</button>
+                </div>
+                <div id="createUserArea" style="display:none;">
+                    <label>用户昵称（中文可自动生成ID）</label>
+                    <input type="text" id="newUserName" placeholder="例如：小明" class="mb-2">
+                    <label>设置私人密码（至少4位）</label>
+                    <input type="password" id="newUserPassword" class="mb-2">
+                    <label>确认密码</label>
+                    <input type="password" id="newUserPasswordConfirm" class="mb-2">
+                    <button id="confirmCreateBtn" style="width:100%;">创建并登录</button>
+                    <button id="cancelCreateBtn" class="secondary small mt-1" style="width:100%;">取消</button>
+                </div>
             </div>
         </div>
 
         <!-- 管理面板（登录后可见） -->
         <div id="adminPanel" style="display:none;">
             <div class="mode-banner">
-                <span>🔒 离线模式</span>
-                <span class="text-sm">数据仅保存在本地浏览器。导出加密包可发布到网络。</span>
-                <button id="logoutBtn" class="small ghost" style="margin-left:auto;">完全退出</button>
+                <span>🔒 离线模式 · 当前用户：<strong id="currentUserDisplay"></strong></span>
+                <span class="text-sm">数据仅保存在本地浏览器。</span>
+                <button id="logoutBtn" class="small ghost" style="margin-left:auto;">切换用户/退出</button>
             </div>
 
             <!-- 个人信息 -->
@@ -195,16 +216,16 @@
             <div class="card">
                 <h3>💾 数据备份与发布</h3>
                 <div class="flex" style="gap:12px; flex-wrap:wrap;">
-                    <button id="exportBtn">📤 导出明文备份</button>
+                    <button id="exportBtn">📤 导出明文备份（当前用户）</button>
                     <label class="button small secondary" style="cursor:pointer; margin:0;">
                         📥 导入明文备份
                         <input type="file" id="importFile" accept=".json" style="display:none;">
                     </label>
-                    <button id="exportEncryptedBtn">🔐 导出加密公开包</button>
-                    <button id="exportProfileEncryptedBtn">🔐 导出个人信息加密包</button>
+                    <button id="exportEncryptedBtn">🔐 导出加密公开包（所有公开文章）</button>
+                    <button id="exportProfileEncryptedBtn">🔐 导出个人信息加密包（当前用户）</button>
                 </div>
                 <p class="text-sm text-secondary mt-2">
-                    “导出加密公开包”生成 <code>posts.enc</code>，“导出个人信息加密包”生成 <code>profile.enc</code>，上传到仓库 <code>data/</code> 目录下即可。
+                    加密包需上传到仓库 <code>data/</code> 目录。
                 </p>
             </div>
 
@@ -227,10 +248,9 @@
 
     <script>
         (() => {
-            // ========== 从 config.js 获取密钥 ==========
             const PUBLIC_PASS = window.__BLOG_PASS__ || 'fallback-dev-key';
 
-            // ========== 主题 ==========
+            // 主题
             const themeToggle = document.getElementById('themeToggle');
             const savedTheme = localStorage.getItem('blog_theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -242,7 +262,6 @@
                 themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
             });
 
-            // ========== Toast ==========
             function showToast(msg, type = 'info') {
                 const container = document.getElementById('toastContainer');
                 const toast = document.createElement('div');
@@ -253,12 +272,11 @@
                 setTimeout(() => toast.remove(), 3000);
             }
 
-            // ========== 工具函数 ==========
             function generateId() { return 'post_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6); }
             async function sha256(m) { const b = new TextEncoder().encode(m); const h = await crypto.subtle.digest('SHA-256', b); return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join(''); }
             function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
-            // ========== 加密解密 ==========
+            // 加密
             async function deriveKey() {
                 const enc = new TextEncoder();
                 const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
@@ -277,42 +295,156 @@
                 return btoa(String.fromCharCode(...combined));
             }
 
-            // ========== 登录 ==========
-            const FIXED_PASSWORD = 'bilibili';
-            const PASSWORD_HASH_KEY = 'blog_admin_password_hash';
-            const LOGIN_STATUS_KEY = 'blog_admin_logged_in';
-
-            async function ensureHash() {
-                if (!localStorage.getItem(PASSWORD_HASH_KEY)) {
-                    localStorage.setItem(PASSWORD_HASH_KEY, await sha256(FIXED_PASSWORD));
-                }
+            // ========== 多用户管理 ==========
+            const USER_LIST_KEY = 'blog_user_list';
+            function getUserList() {
+                try { return JSON.parse(localStorage.getItem(USER_LIST_KEY) || '[]'); } catch (e) { return []; }
+            }
+            function saveUserList(list) {
+                localStorage.setItem(USER_LIST_KEY, JSON.stringify(list));
+            }
+            function getUserAuth(userId) {
+                const raw = localStorage.getItem(`blog_auth_${userId}`);
+                return raw ? JSON.parse(raw) : null;
+            }
+            function saveUserAuth(userId, auth) {
+                localStorage.setItem(`blog_auth_${userId}`, JSON.stringify(auth));
+            }
+            function getCurrentUserId() {
+                return localStorage.getItem('blog_current_user_id') || null;
+            }
+            function setCurrentUserId(id) {
+                localStorage.setItem('blog_current_user_id', id);
+            }
+            function clearCurrentUser() {
+                localStorage.removeItem('blog_current_user_id');
             }
 
+            // 生成用户ID（纯英文直接作为ID，含中文则转拼音首字母+随机数）
+            function generateUserId(name) {
+                if (/^[a-zA-Z0-9_]+$/.test(name)) return name.toLowerCase();
+                // 简单生成：取前几个字符的拼音首字母（这里用随机替代简化）
+                const rand = Math.random().toString(36).substr(2, 4);
+                return 'user_' + rand;
+            }
+
+            let selectedUserId = null;
+
+            // 刷新用户列表UI
+            function renderUserList() {
+                const users = getUserList();
+                const container = document.getElementById('userListContainer');
+                if (users.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-sm">暂无用户，请创建第一个。</p>';
+                    return;
+                }
+                container.innerHTML = users.map(u => {
+                    const isSelected = selectedUserId === u.id;
+                    const profile = BlogData.getProfile(u.id);
+                    const name = profile.name || u.id;
+                    return `
+                        <div class="user-item ${isSelected ? 'active' : ''}" data-userid="${u.id}">
+                            <span>👤 ${escapeHTML(name)}</span>
+                            <span class="text-sm text-muted">${escapeHTML(u.id)}</span>
+                        </div>`;
+                }).join('');
+                // 绑定点击事件
+                container.querySelectorAll('.user-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        selectedUserId = el.dataset.userid;
+                        renderUserList();
+                        document.getElementById('loginPasswordArea').style.display = 'block';
+                        document.getElementById('createUserArea').style.display = 'none';
+                        document.getElementById('loginPassword').value = '';
+                        document.getElementById('loginPassword').focus();
+                    });
+                });
+            }
+
+            // 切换到创建界面
+            document.getElementById('createUserBtn').addEventListener('click', () => {
+                selectedUserId = null;
+                document.getElementById('loginPasswordArea').style.display = 'none';
+                document.getElementById('createUserArea').style.display = 'block';
+                document.getElementById('newUserName').value = '';
+                document.getElementById('newUserPassword').value = '';
+                document.getElementById('newUserPasswordConfirm').value = '';
+                renderUserList();
+            });
+
+            document.getElementById('cancelCreateBtn').addEventListener('click', () => {
+                document.getElementById('createUserArea').style.display = 'none';
+                renderUserList();
+            });
+
+            document.getElementById('cancelLoginBtn').addEventListener('click', () => {
+                selectedUserId = null;
+                document.getElementById('loginPasswordArea').style.display = 'none';
+                document.getElementById('loginPassword').value = '';
+                renderUserList();
+            });
+
+            // 创建新用户
+            document.getElementById('confirmCreateBtn').addEventListener('click', async () => {
+                const name = document.getElementById('newUserName').value.trim();
+                const pw1 = document.getElementById('newUserPassword').value;
+                const pw2 = document.getElementById('newUserPasswordConfirm').value;
+                if (!name) return showToast('请输入昵称', 'error');
+                if (pw1.length < 4) return showToast('密码至少4位', 'error');
+                if (pw1 !== pw2) return showToast('两次密码不一致', 'error');
+
+                const userId = generateUserId(name);
+                const users = getUserList();
+                if (users.find(u => u.id === userId)) return showToast('该用户ID已存在，请修改昵称', 'error');
+
+                // 保存密码哈希
+                const hash = await sha256(pw1);
+                saveUserAuth(userId, { password_hash: hash });
+                // 保存用户信息
+                const profile = { name: name, bio: '', avatar: '', links: [] };
+                BlogData.saveProfile(userId, profile);
+                // 添加到列表
+                users.push({ id: userId });
+                saveUserList(users);
+                // 自动登录
+                setCurrentUserId(userId);
+                showToast('用户创建成功', 'success');
+                showAdminPanel();
+            });
+
+            // 登录验证
+            document.getElementById('loginBtn').addEventListener('click', async () => {
+                if (!selectedUserId) return showToast('请先选择一个用户', 'error');
+                const password = document.getElementById('loginPassword').value;
+                const auth = getUserAuth(selectedUserId);
+                if (!auth) return showToast('用户数据异常', 'error');
+                const hash = await sha256(password);
+                if (hash !== auth.password_hash) return showToast('密码错误', 'error');
+                setCurrentUserId(selectedUserId);
+                showAdminPanel();
+            });
+
+            // 退出登录
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                clearCurrentUser();
+                selectedUserId = null;
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('loginPasswordArea').style.display = 'none';
+                document.getElementById('createUserArea').style.display = 'none';
+                renderUserList();
+            });
+
+            // 管理面板
             function showAdminPanel() {
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('currentUserDisplay').textContent = BlogData.getProfile().name || getCurrentUserId();
                 loadProfile();
                 renderPostList();
             }
 
-            document.getElementById('loginBtn').addEventListener('click', async () => {
-                const input = document.getElementById('loginPassword').value;
-                const storedHash = localStorage.getItem(PASSWORD_HASH_KEY);
-                if (await sha256(input) === storedHash) {
-                    localStorage.setItem(LOGIN_STATUS_KEY, 'true');
-                    showToast('登录成功', 'success');
-                    showAdminPanel();
-                } else {
-                    showToast('密码错误', 'error');
-                }
-            });
-
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                localStorage.removeItem(LOGIN_STATUS_KEY);
-                location.reload();
-            });
-
-            // ========== 个人信息 ==========
+            // 个人信息加载
             function loadProfile() {
                 const p = BlogData.getProfile();
                 document.getElementById('profileAvatar').value = p.avatar || '';
@@ -332,14 +464,14 @@
                     const idx = parseInt(e.target.dataset.idx);
                     const data = BlogData.getProfile();
                     data.links.splice(idx, 1);
-                    BlogData.saveProfile(data);
+                    BlogData.saveProfile(null, data);
                     renderSocialLinks(data.links);
                 }));
             }
             document.getElementById('addSocialLink').addEventListener('click', () => {
                 const p = BlogData.getProfile();
                 p.links.push({ name: '', url: '' });
-                BlogData.saveProfile(p);
+                BlogData.saveProfile(null, p);
                 renderSocialLinks(p.links);
             });
             document.getElementById('saveProfileBtn').addEventListener('click', () => {
@@ -352,13 +484,14 @@
                         url: document.querySelectorAll('[data-link-url]')[i].value.trim()
                     })).filter(l => l.name || l.url)
                 };
-                BlogData.saveProfile(p);
+                BlogData.saveProfile(null, p);
+                document.getElementById('currentUserDisplay').textContent = p.name || getCurrentUserId();
                 showToast('个人信息已保存', 'success');
             });
 
-            // ========== 文章管理 ==========
+            // 文章管理（与单用户版类似，但需传入当前用户ID）
             const postForm = document.getElementById('postForm');
-            const postId = document.getElementById('postId');
+            const postIdInput = document.getElementById('postId');
             const postTitle = document.getElementById('postTitle');
             const postDate = document.getElementById('postDate');
             postDate.value = new Date().toISOString().split('T')[0];
@@ -370,9 +503,10 @@
             const savePostBtn = document.getElementById('savePostBtn');
             const cancelEditBtn = document.getElementById('cancelEditBtn');
             let editingId = null;
+            const uid = () => getCurrentUserId();
 
             function resetForm() {
-                postId.value = '';
+                postIdInput.value = '';
                 postTitle.value = '';
                 postCategory.value = '';
                 postFeatured.checked = false;
@@ -400,10 +534,14 @@
                 };
                 if (!post.title) return showToast('标题不能为空', 'error');
                 if (post.featured) {
-                    BlogData.getAllPosts().forEach(p => { if (p.id !== post.id && p.featured) { p.featured = false; BlogData.updatePost(p); } });
+                    const all = BlogData.getAllPosts();
+                    all.forEach(p => { if (p.id !== post.id && p.featured) { p.featured = false; BlogData.updatePost(p); } });
                 }
-                if (editingId) BlogData.updatePost(post);
-                else BlogData.addPost(post);
+                if (editingId) {
+                    BlogData.updatePost(post);
+                } else {
+                    BlogData.addPost(post);
+                }
                 resetForm();
                 renderPostList();
                 showToast(editingId ? '文章已更新' : '文章已发布', 'success');
@@ -412,7 +550,7 @@
             function editPost(id) {
                 const post = BlogData.getPost(id);
                 if (!post) return;
-                postId.value = post.id;
+                postIdInput.value = post.id;
                 postTitle.value = post.title;
                 postDate.value = post.date;
                 postCategory.value = post.category || '';
@@ -437,7 +575,8 @@
                 if (!post) return;
                 post.featured = !post.featured;
                 if (post.featured) {
-                    BlogData.getAllPosts().forEach(p => { if (p.id !== id && p.featured) { p.featured = false; BlogData.updatePost(p); } });
+                    const all = BlogData.getAllPosts();
+                    all.forEach(p => { if (p.id !== id && p.featured) { p.featured = false; BlogData.updatePost(p); } });
                 }
                 BlogData.updatePost(post);
                 renderPostList();
@@ -478,22 +617,20 @@
             window._toggleFeatured = toggleFeatured;
             window._togglePublic = togglePublic;
 
-            // ========== 备份与加密导出 ==========
+            // 备份导出（仅当前用户）
             document.getElementById('exportBtn').addEventListener('click', () => {
                 const backup = {
                     profile: BlogData.getProfile(),
                     posts: BlogData.getAllPosts(),
-                    publicIndex: BlogData.getPublicIndex(),
-                    postIndex: BlogData.getPostIndex()
+                    userId: uid()
                 };
                 const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = `blog_backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `blog_backup_${uid()}_${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
                 showToast('明文备份已导出', 'success');
             });
-
             document.getElementById('importFile').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -501,10 +638,8 @@
                 reader.onload = ev => {
                     try {
                         const backup = JSON.parse(ev.target.result);
-                        BlogData.saveProfile(backup.profile || {});
-                        BlogData.savePostIndex(backup.postIndex || []);
-                        BlogData.savePublicIndex(backup.publicIndex || []);
-                        (backup.posts || []).forEach(p => BlogData.savePost(p));
+                        if (backup.profile) BlogData.saveProfile(null, backup.profile);
+                        if (backup.posts) backup.posts.forEach(p => BlogData.savePost(p));
                         loadProfile();
                         renderPostList();
                         showToast('数据已导入', 'success');
@@ -514,19 +649,24 @@
                 this.value = '';
             });
 
+            // 加密导出
             document.getElementById('exportEncryptedBtn').addEventListener('click', async () => {
-                const posts = BlogData.getAllPosts().filter(p => p.public);
-                if (posts.length === 0) return showToast('没有公开文章可导出', 'error');
-                const plain = JSON.stringify(posts);
+                const allUsers = getUserList();
+                let allPublicPosts = [];
+                for (const u of allUsers) {
+                    const posts = BlogData.getAllPosts(u.id).filter(p => p.public);
+                    allPublicPosts = allPublicPosts.concat(posts);
+                }
+                if (allPublicPosts.length === 0) return showToast('没有公开文章可导出', 'error');
+                const plain = JSON.stringify(allPublicPosts);
                 const encrypted = await encrypt(plain);
                 const blob = new Blob([encrypted], { type: 'application/octet-stream' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = 'posts.enc';
                 a.click();
-                showToast('加密公开包已导出，请上传至 data/posts.enc', 'success');
+                showToast('加密公开包已导出', 'success');
             });
-
             document.getElementById('exportProfileEncryptedBtn').addEventListener('click', async () => {
                 const profile = BlogData.getProfile();
                 const plain = JSON.stringify(profile);
@@ -536,10 +676,9 @@
                 a.href = URL.createObjectURL(blob);
                 a.download = 'profile.enc';
                 a.click();
-                showToast('个人信息加密包已导出，请上传至 data/profile.enc', 'success');
+                showToast('个人信息加密包已导出（当前用户）', 'success');
             });
 
-            // ========== 确认对话框 ==========
             function showConfirm(title, msg, onConfirm) {
                 document.getElementById('confirmTitle').textContent = title;
                 document.getElementById('confirmMsg').textContent = msg;
@@ -549,11 +688,20 @@
                 document.getElementById('confirmCancel').onclick = () => { modal.style.display = 'none'; };
             }
 
-            // ========== 初始化 ==========
-            (async () => {
-                await ensureHash();
-                if (localStorage.getItem(LOGIN_STATUS_KEY) === 'true') showAdminPanel();
-            })();
+            // 初始化
+            renderUserList();
+            const savedUid = getCurrentUserId();
+            if (savedUid) {
+                selectedUserId = savedUid;
+                // 检查是否存在该用户
+                const users = getUserList();
+                if (users.find(u => u.id === savedUid)) {
+                    document.getElementById('loginPasswordArea').style.display = 'block';
+                    renderUserList();
+                } else {
+                    clearCurrentUser();
+                }
+            }
         })();
     </script>
 </body>
