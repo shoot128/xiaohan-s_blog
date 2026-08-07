@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - 静谧书斋</title>
+    <script src="js/blog-data.js"></script>
+    <style>
+        :root {
+            --bg: #f9f7f4; --bg-card: #ffffff; --text: #2c2c2c; --text-secondary: #5a5a5a;
+            --text-muted: #8a8a8a; --border: #e8e4e0; --accent: #a67c6b; --accent-soft: #d4c5bc;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06); --shadow-hover: 0 6px 24px rgba(0,0,0,0.10);
+            --radius: 20px; --transition: 0.35s ease;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a1e; --bg-card: #26262b; --text: #e8e4e0; --text-secondary: #b0aba6;
+            --text-muted: #7a7570; --border: #3a3a3f; --accent: #c9a898; --accent-soft: #5a4f4a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; }
+        body {
+            font-family: var(--font); background: var(--bg); color: var(--text);
+            line-height: 1.7; min-height: 100vh; display: flex; flex-direction: column;
+            transition: background var(--transition), color var(--transition);
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .container { max-width: 800px; margin: 0 auto; padding: 24px; width: 100%; }
+        .card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 32px;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; background: #f0ebe6; color: #7a6b5f; margin-right: 6px; }
+        [data-theme="dark"] .tag { background: #3a3530; color: #c9beb5; }
+        .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.78rem; padding: 3px 10px; border-radius: 14px; font-weight: 600; margin-right: 6px; }
+        .badge-featured { background: #fdf2e0; color: #b8860b; }
+        .badge-public { background: #e3f2fd; color: #3a7ca5; }
+        [data-theme="dark"] .badge-featured { background: #3a2e1a; color: #e0b860; }
+        [data-theme="dark"] .badge-public { background: #1a2a3a; color: #7ab8e0; }
+        .post-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 16px 0; color: var(--text-secondary); }
+        .post-content { margin-top: 24px; line-height: 1.8; }
+        .back-link { display: inline-block; margin-bottom: 20px; font-weight: 500; }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 10;
+            background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 50%;
+            width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; cursor: pointer; transition: all var(--transition); color: var(--text);
+        }
+        .theme-toggle:hover { border-color: var(--accent); }
+        footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.8rem; margin-top: auto; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" title="切换主题">☀️</button>
+    <main class="container">
+        <a href="index.html" class="back-link">← 返回书斋</a>
+        <div id="postContainer" class="card">
+            <p class="text-muted text-center">加载中...</p>
+        </div>
+    </main>
+    <footer>
+        <p>© 2026 静谧书斋 · 📡 山脉工作室 & DeepSeek 荣誉出品</p>
+    </footer>
+
+    <script>
+        (() => {
+            // 主题
+            const themeToggle = document.getElementById('themeToggle');
+            const savedTheme = localStorage.getItem('blog_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+            themeToggle.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('blog_theme', next);
+                themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+            });
+
+            // 加密工具（与首页相同）
+            const PUBLIC_PASS = 'MyPublicBlogKey2024!';
+            async function deriveKey() {
+                const enc = new TextEncoder();
+                const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
+                return crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt: enc.encode('blog-salt'), iterations: 100000, hash: 'SHA-256' },
+                    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['decrypt']
+                );
+            }
+            async function decrypt(combined) {
+                const key = await deriveKey();
+                const data = Uint8Array.from(atob(combined), c => c.charCodeAt(0));
+                const iv = data.slice(0, 12), ciphertext = data.slice(12);
+                const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+                return new TextDecoder().decode(decrypted);
+            }
+
+            // 获取 URL 参数
+            const params = new URLSearchParams(window.location.search);
+            const postId = params.get('id');
+            const source = params.get('source') || 'public'; // public 或 mine
+
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str || '';
+                return div.innerHTML;
+            }
+
+            async function loadPost() {
+                const container = document.getElementById('postContainer');
+                if (!postId) {
+                    container.innerHTML = '<p class="text-muted text-center">未指定文章ID。</p>';
+                    return;
+                }
+
+                let post = null;
+                if (source === 'mine') {
+                    // 从本地读取
+                    post = BlogData.getPost(postId);
+                } else {
+                    // 优先尝试远程加密包
+                    try {
+                        const res = await fetch('data/posts.enc');
+                        if (res.ok) {
+                            const encText = await res.text();
+                            const plain = await decrypt(encText);
+                            const posts = JSON.parse(plain);
+                            post = posts.find(p => p.id === postId);
+                        }
+                    } catch (e) {
+                        console.warn('远程加密包加载失败，尝试本地公开文章');
+                    }
+                    // 如果远程没有，退回到本地公开文章
+                    if (!post) {
+                        post = BlogData.getPost(postId);
+                        if (post && !post.public) post = null; // 非公开的不能显示
+                    }
+                }
+
+                if (!post) {
+                    container.innerHTML = '<p class="text-muted text-center">文章不存在或已删除。</p>';
+                    return;
+                }
+
+                // 渲染详情
+                const badges = [];
+                if (post.featured) badges.push('<span class="badge badge-featured">⭐ 精选</span>');
+                if (post.public) badges.push('<span class="badge badge-public">🌐 公开</span>');
+                container.innerHTML = `
+                    <h1>${escapeHTML(post.title)}</h1>
+                    <div class="post-meta">
+                        <span>📅 ${escapeHTML(post.date)}</span>
+                        ${post.category ? `<span class="tag">${escapeHTML(post.category)}</span>` : ''}
+                        ${badges.join('')}
+                        ${source === 'public' && post.author_name ? `<span style="margin-left:auto;">✍ ${escapeHTML(post.author_name)}</span>` : ''}
+                    </div>
+                    <div class="post-content">${post.content || ''}</div>
+                `;
+            }
+
+            loadPost();
+        })();
+    </script>
+</body>
+</html>
