@@ -39,19 +39,22 @@
       localStorage.setItem('blog_public_posts_index', JSON.stringify(index));
     },
 
-    // 添加文章到索引（同时维护公开索引）
+    // 添加文章（维护索引和公开索引）
     addPost(post) {
       const index = this.getPostIndex();
-      // 按日期倒序插入
       index.unshift(post.id);
       this.savePostIndex(index);
       this.savePost(post);
       if (post.public) {
-        this.addToPublicIndex(post.id);
+        const publicIndex = this.getPublicIndex();
+        if (!publicIndex.includes(post.id)) {
+          publicIndex.push(post.id);
+          this.savePublicIndex(publicIndex);
+        }
       }
     },
 
-    // 更新文章
+    // 更新文章（同步公开索引）
     updatePost(post) {
       this.savePost(post);
       const publicIndex = this.getPublicIndex();
@@ -70,29 +73,24 @@
       const index = this.getPostIndex().filter(pid => pid !== id);
       this.savePostIndex(index);
       this.deletePost(id);
-      // 同时从公开索引移除
       const publicIndex = this.getPublicIndex().filter(pid => pid !== id);
       this.savePublicIndex(publicIndex);
     },
 
-    addToPublicIndex(id) {
-      const publicIndex = this.getPublicIndex();
-      if (!publicIndex.includes(id)) {
-        publicIndex.push(id);
-        this.savePublicIndex(publicIndex);
-      }
-    },
-
-    // 获取所有文章数据（用于管理后台列表）
+    // 获取所有文章（按日期倒序）
     getAllPosts() {
       const index = this.getPostIndex();
-      return index.map(id => this.getPost(id)).filter(p => p !== null);
+      const posts = index.map(id => this.getPost(id)).filter(p => p !== null);
+      posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return posts;
     },
 
-    // 获取所有公开文章数据（用于首页）
+    // 获取所有公开文章（按日期倒序）
     getPublicPosts() {
       const publicIndex = this.getPublicIndex();
-      return publicIndex.map(id => this.getPost(id)).filter(p => p !== null);
+      const posts = publicIndex.map(id => this.getPost(id)).filter(p => p !== null);
+      posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return posts;
     }
   };
 })();
