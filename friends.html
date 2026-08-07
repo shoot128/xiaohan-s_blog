@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>友情链接 - 静谧书斋</title>
+    <style>
+        :root {
+            --bg: #f9f7f4; --bg-card: #ffffff; --text: #2c2c2c; --text-secondary: #5a5a5a;
+            --text-muted: #8a8a8a; --border: #e8e4e0; --accent: #a67c6b; --accent-soft: #d4c5bc;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06); --radius: 20px; --transition: 0.35s ease;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a1e; --bg-card: #26262b; --text: #e8e4e0; --text-secondary: #b0aba6;
+            --text-muted: #7a7570; --border: #3a3a3f; --accent: #c9a898; --accent-soft: #5a4f4a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; }
+        body {
+            font-family: var(--font); background: var(--bg); color: var(--text);
+            line-height: 1.7; min-height: 100vh; display: flex; flex-direction: column;
+            transition: background var(--transition), color var(--transition);
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .container { max-width: 800px; margin: 0 auto; padding: 24px; width: 100%; }
+        .card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 32px;
+            box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px;
+        }
+        .friends-grid {
+            display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            margin: 24px 0;
+        }
+        .friend-item {
+            padding: 20px; border: 1px solid var(--border); border-radius: 16px;
+            text-align: center; transition: all var(--transition);
+        }
+        .friend-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 10;
+            background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 50%;
+            width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; cursor: pointer; transition: all var(--transition); color: var(--text);
+        }
+        .theme-toggle:hover { border-color: var(--accent); }
+        footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.8rem; margin-top: auto; }
+        .back-link { display: inline-block; margin-bottom: 20px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" title="切换主题">☀️</button>
+    <main class="container">
+        <a href="index.html" class="back-link">← 返回书斋</a>
+        <div class="card">
+            <h1>🌿 友情链接</h1>
+            <p class="text-secondary">这里是一些值得推荐的朋友与站点。</p>
+            <div class="friends-grid" id="friendsList">
+                <!-- 预设友情链接，可手动修改 -->
+                <div class="friend-item">
+                    <strong>示例博客</strong>
+                    <p class="text-sm text-muted">一个示例站点</p>
+                    <a href="https://example.com" target="_blank">访问</a>
+                </div>
+                <div class="friend-item">
+                    <strong>开源社区</strong>
+                    <p class="text-sm text-muted">贡献代码的地方</p>
+                    <a href="https://github.com" target="_blank">访问</a>
+                </div>
+            </div>
+            <p class="text-sm text-muted mt-3">📧 联系邮箱：hello@jingmiblog.com（示例）</p>
+        </div>
+    </main>
+    <footer>
+        <p>© 2026 静谧书斋 · 山脉工作室 & DeepSeek 荣誉出品</p>
+    </footer>
+
+    <script>
+        (() => {
+            const toggle = document.getElementById('themeToggle');
+            const saved = localStorage.getItem('blog_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            toggle.textContent = saved === 'dark' ? '🌙' : '☀️';
+            toggle.addEventListener('click', () => {
+                const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('blog_theme', next);
+                toggle.textContent = next === 'dark' ? '🌙' : '☀️';
+            });
+        })();
+    </script>
+</body>
+</html>
