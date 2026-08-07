@@ -6,7 +6,6 @@
     <title>管理后台 · 静谧书斋</title>
     <script src="js/blog-data.js"></script>
     <style>
-        /* 沿用与首页相同的设计变量，此处完整复制所有样式 */
         :root {
             --bg: #f9f7f4;
             --bg-card: #ffffff;
@@ -130,7 +129,6 @@
     </header>
 
     <main class="container" style="flex:1; padding-top:24px; padding-bottom:40px;">
-        <!-- 登录界面 -->
         <div id="loginSection">
             <div class="card" style="max-width:440px; margin:40px auto;">
                 <h2 style="margin-bottom:16px;">🔐 本地管理员登录</h2>
@@ -141,7 +139,6 @@
             </div>
         </div>
 
-        <!-- 管理面板（登录后可见） -->
         <div id="adminPanel" style="display:none;">
             <div class="mode-banner">
                 <span>🔒 离线模式</span>
@@ -149,7 +146,6 @@
                 <button id="logoutBtn" class="small ghost" style="margin-left:auto;">完全退出</button>
             </div>
 
-            <!-- 个人信息 -->
             <div class="card">
                 <h3>👤 个人信息</h3>
                 <div class="flex mt-2" style="gap:20px;">
@@ -165,7 +161,6 @@
                 <button id="saveProfileBtn" class="mt-3">保存个人信息</button>
             </div>
 
-            <!-- 文章管理 -->
             <div class="card">
                 <h3>📝 文章管理</h3>
                 <form id="postForm" class="mt-2">
@@ -191,7 +186,6 @@
                 <div id="postListContainer"></div>
             </div>
 
-            <!-- 数据备份与加密导出 -->
             <div class="card">
                 <h3>💾 数据备份与发布</h3>
                 <div class="flex" style="gap:12px; flex-wrap:wrap;">
@@ -201,9 +195,10 @@
                         <input type="file" id="importFile" accept=".json" style="display:none;">
                     </label>
                     <button id="exportEncryptedBtn">🔐 导出加密公开包</button>
+                    <button id="exportProfileEncryptedBtn">🔐 导出个人信息加密包</button>
                 </div>
                 <p class="text-sm text-secondary mt-2">
-                    “导出加密公开包”会生成 <code>posts.enc</code> 文件，上传到仓库 <code>data/</code> 目录下，访客即可阅读公开文章。
+                    “导出加密公开包”生成 <code>posts.enc</code>，“导出个人信息加密包”生成 <code>profile.enc</code>，上传到仓库 <code>data/</code> 目录下即可。
                 </p>
             </div>
 
@@ -226,7 +221,6 @@
 
     <script>
         (() => {
-            // ========== 主题 ==========
             const themeToggle = document.getElementById('themeToggle');
             const savedTheme = localStorage.getItem('blog_theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -238,7 +232,6 @@
                 themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
             });
 
-            // ========== Toast ==========
             function showToast(msg, type = 'info') {
                 const container = document.getElementById('toastContainer');
                 const toast = document.createElement('div');
@@ -249,19 +242,17 @@
                 setTimeout(() => toast.remove(), 3000);
             }
 
-            // ========== 工具函数 ==========
             function generateId() { return 'post_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6); }
             async function sha256(m) { const b = new TextEncoder().encode(m); const h = await crypto.subtle.digest('SHA-256', b); return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2,'0')).join(''); }
             function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
-            // ========== 加密解密（与首页相同的密钥） ==========
             const PUBLIC_PASS = 'MyPublicBlogKey2024!';
             async function deriveKey() {
                 const enc = new TextEncoder();
                 const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(PUBLIC_PASS), 'PBKDF2', false, ['deriveKey']);
                 return crypto.subtle.deriveKey(
                     { name: 'PBKDF2', salt: enc.encode('blog-salt'), iterations: 100000, hash: 'SHA-256' },
-                    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+                    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
                 );
             }
             async function encrypt(text) {
@@ -274,7 +265,6 @@
                 return btoa(String.fromCharCode(...combined));
             }
 
-            // ========== 登录 ==========
             const FIXED_PASSWORD = 'bilibili';
             const PASSWORD_HASH_KEY = 'blog_admin_password_hash';
             const LOGIN_STATUS_KEY = 'blog_admin_logged_in';
@@ -309,7 +299,6 @@
                 location.reload();
             });
 
-            // ========== 个人信息 ==========
             function loadProfile() {
                 const p = BlogData.getProfile();
                 document.getElementById('profileAvatar').value = p.avatar || '';
@@ -353,7 +342,6 @@
                 showToast('个人信息已保存', 'success');
             });
 
-            // ========== 文章管理 ==========
             const postForm = document.getElementById('postForm');
             const postId = document.getElementById('postId');
             const postTitle = document.getElementById('postTitle');
@@ -475,7 +463,6 @@
             window._toggleFeatured = toggleFeatured;
             window._togglePublic = togglePublic;
 
-            // ========== 备份与加密导出 ==========
             document.getElementById('exportBtn').addEventListener('click', () => {
                 const backup = {
                     profile: BlogData.getProfile(),
@@ -511,9 +498,8 @@
                 this.value = '';
             });
 
-            // 加密导出
             document.getElementById('exportEncryptedBtn').addEventListener('click', async () => {
-                const posts = BlogData.getAllPosts().filter(p => p.public); // 只导出公开文章
+                const posts = BlogData.getAllPosts().filter(p => p.public);
                 if (posts.length === 0) return showToast('没有公开文章可导出', 'error');
                 const plain = JSON.stringify(posts);
                 const encrypted = await encrypt(plain);
@@ -525,7 +511,18 @@
                 showToast('加密公开包已导出，请上传至 data/posts.enc', 'success');
             });
 
-            // ========== 确认对话框 ==========
+            document.getElementById('exportProfileEncryptedBtn').addEventListener('click', async () => {
+                const profile = BlogData.getProfile();
+                const plain = JSON.stringify(profile);
+                const encrypted = await encrypt(plain);
+                const blob = new Blob([encrypted], { type: 'application/octet-stream' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'profile.enc';
+                a.click();
+                showToast('个人信息加密包已导出，请上传至 data/profile.enc', 'success');
+            });
+
             function showConfirm(title, msg, onConfirm) {
                 document.getElementById('confirmTitle').textContent = title;
                 document.getElementById('confirmMsg').textContent = msg;
@@ -535,7 +532,6 @@
                 document.getElementById('confirmCancel').onclick = () => { modal.style.display = 'none'; };
             }
 
-            // ========== 初始化 ==========
             (async () => {
                 await ensureHash();
                 if (localStorage.getItem(LOGIN_STATUS_KEY) === 'true') showAdminPanel();
